@@ -1,56 +1,169 @@
 import pickle
 import os
+from datetime import datetime
 
 TASKS_FILE = "tasks.pkl"
 
-def load_tasks():
-    if os.path.exists(TASKS_FILE):
-        with open(TASKS_FILE, "rb") as file:
-            return pickle.load(file)
-    return []
 
-def save_tasks(tasks):
-    with open(TASKS_FILE, "wb") as file:
-        pickle.dump(tasks, file)
+class TaskManager:
+    def __init__(self):
+        self.tasks = self.load_tasks()
 
-def display_tasks(tasks):
-    if tasks:
-        for i, task in enumerate(tasks, 1):
-            print(f"{i}. {task}")
-    else:
-        print("No tasks found.")
-
-def main():
-    tasks = load_tasks()
-    while True:
-        print("\n1. View Tasks\n2. Add Task\n3. Remove Task\n4. Update Task\n5. Exit")
-        choice = input("Choose an option: ")
-        
-        if choice == "1":
-            display_tasks(tasks)
-        elif choice == "2":
-            tasks.append(input("Enter task: "))
-            print("Task added.")
-        elif choice == "3":
-            display_tasks(tasks)
+    # Load tasks from file
+    def load_tasks(self):
+        if os.path.exists(TASKS_FILE):
             try:
-                tasks.pop(int(input("Enter task number to remove: ")) - 1)
-                print("Task removed.")
-            except:
-                print("Invalid input.")
-        elif choice == "4":
-            display_tasks(tasks)
-            try:
-                index = int(input("Enter task number to update: ")) - 1
-                tasks[index] = input("New task: ")
-                print("Task updated.")
-            except:
-                print("Invalid input.")
-        elif choice == "5":
-            save_tasks(tasks)
-            break
+                with open(TASKS_FILE, "rb") as file:
+                    return pickle.load(file)
+            except Exception:
+                return []
+        return []
+
+    def save_tasks(self):
+        with open(TASKS_FILE, "wb") as file:
+            pickle.dump(self.tasks, file)
+
+    def display_tasks(self):
+        if not self.tasks:
+            print("\nNo tasks available.")
+            return
+
+        print("\n===== TASK LIST =====")
+        for i, task in enumerate(self.tasks, start=1):
+            status = "✓ Done" if task["completed"] else "✗ Pending"
+            print(
+                f"{i}. {task['title']} | {status} | Created: {task['created_at']}"
+            )
+    def add_task(self):
+        title = input("Enter task title: ").strip()
+
+        if not title:
+            print("Task cannot be empty.")
+            return
+
+        task = {
+            "title": title,
+            "completed": False,
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+        self.tasks.append(task)
+        self.save_tasks()
+        print("Task added successfully.")
+    def remove_task(self):
+        self.display_tasks()
+
+        if not self.tasks:
+            return
+
+        try:
+            index = int(input("Enter task number to remove: ")) - 1
+
+            if 0 <= index < len(self.tasks):
+                removed = self.tasks.pop(index)
+                self.save_tasks()
+                print(f"Removed task: {removed['title']}")
+            else:
+                print("Invalid task number.")
+
+        except ValueError:
+            print("Please enter a valid number.")
+
+    def update_task(self):
+        self.display_tasks()
+
+        if not self.tasks:
+            return
+
+        try:
+            index = int(input("Enter task number to update: ")) - 1
+
+            if 0 <= index < len(self.tasks):
+                new_title = input("Enter new task title: ").strip()
+
+                if new_title:
+                    self.tasks[index]["title"] = new_title
+                    self.save_tasks()
+                    print("Task updated successfully.")
+                else:
+                    print("Task title cannot be empty.")
+            else:
+                print("Invalid task number.")
+
+        except ValueError:
+            print("Please enter a valid number.")
+    def mark_completed(self):
+        self.display_tasks()
+
+        if not self.tasks:
+            return
+
+        try:
+            index = int(input("Enter task number to mark as completed: ")) - 1
+
+            if 0 <= index < len(self.tasks):
+                self.tasks[index]["completed"] = True
+                self.save_tasks()
+                print("Task marked as completed.")
+            else:
+                print("Invalid task number.")
+
+        except ValueError:
+            print("Please enter a valid number.")
+    def search_tasks(self):
+        keyword = input("Enter keyword to search: ").lower()
+
+        results = [
+            task for task in self.tasks
+            if keyword in task["title"].lower()
+        ]
+
+        if results:
+            print("\n===== SEARCH RESULTS =====")
+            for i, task in enumerate(results, start=1):
+                status = "✓ Done" if task["completed"] else "✗ Pending"
+                print(f"{i}. {task['title']} | {status}")
         else:
-            print("Invalid choice.")
+            print("No matching tasks found.")
+    def run(self):
+        while True:
+            print("\n====== TO-DO LIST MENU ======")
+            print("1. View Tasks")
+            print("2. Add Task")
+            print("3. Remove Task")
+            print("4. Update Task")
+            print("5. Mark Task as Completed")
+            print("6. Search Task")
+            print("7. Exit")
+
+            choice = input("Choose an option: ")
+
+            if choice == "1":
+                self.display_tasks()
+
+            elif choice == "2":
+                self.add_task()
+
+            elif choice == "3":
+                self.remove_task()
+
+            elif choice == "4":
+                self.update_task()
+
+            elif choice == "5":
+                self.mark_completed()
+
+            elif choice == "6":
+                self.search_tasks()
+
+            elif choice == "7":
+                self.save_tasks()
+                print("Tasks saved. Exiting...")
+                break
+
+            else:
+                print("Invalid choice. Please try again.")
 
 if __name__ == "__main__":
-    main()
+    app = TaskManager()
+    app.run()
